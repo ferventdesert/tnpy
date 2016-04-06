@@ -5,7 +5,7 @@ core = RegexCore('../rules/cnext')
 #RegexCore.LogFile = open("info.html", 'w')
 #RegexCore.LogFile.truncate()
 
-
+print(core.Extract('三百七十三分之二十四',entities=[core.Entities['fraction']]))
 read = open('chs.txt', 'r', encoding='utf-8')
 lines = [x for x in read.readlines()]
 

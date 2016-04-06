@@ -8,8 +8,8 @@ int_max = 9999999;
 def findany(iteral, func):
     for r in iteral:
         if func(r):
-            return True;
-    return False;
+            return r;
+    return None;
 
 def getindex(iteral, func):
     for r in range(len(iteral)):
@@ -235,7 +235,7 @@ class EntityBase(object):
 
     def GetName(self):
         name = self.Name if self.Name != "" else "unknown"
-        return "%s,%s" % (name, re.split("[,.']", str(type(self)))[2].replace("Entity", ""))
+        return "%s,%s" % (name, findany(re.split("[,.']", str(type(self))),lambda d:d.find('Entity')>0).replace("Entity", ""))
 
     def __str__(self):
         return self.GetName()
@@ -1447,8 +1447,20 @@ class RegexCore(object):
                     rawinput = rewrite;
                     self.Entities.SeqBuff = BuffHelper(len(rawinput));
             return rewrite
+    def Match(self, rawinput, mode=None):
 
-    def MatchResult2Doc(self, matchResult):
+        if mode is not None:
+            self.Entities.SeqBuff = BuffHelper(len(rawinput));
+            return self.MatchEntity(mode.Entity, rawinput, mode)
+        else:
+            self.Entities.SeqBuff = BuffHelper(len(rawinput));
+            for entity in self.Entities.ValidEntities:
+                match = self.MatchEntity(entity, rawinput, None)
+                if not RegexCore.MatchAllEntity:
+                    return match;
+            return None;
+
+    def __MatchResult2Doc__(self, matchResult):
         docu = {};
         matchResult.RewriteItem();
         matchResult.ExtractDocument(docu, 0);
@@ -1485,7 +1497,7 @@ class RegexCore(object):
             if len(matchResult.mstr) == 0:
                 start += 1;
             if p == matchResult.pos:
-                docu = self.MatchResult2Doc(matchResult);
+                docu = self.__MatchResult2Doc__(matchResult);
                 docs.append(docu);
                 buffhelper.AddScan(0, matchResult.pos, start);
         return docs;
