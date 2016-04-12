@@ -11,12 +11,16 @@
 |匹配(match)|在字符串中匹配字符| match(m.mstr)|
 |转写(rewrite)|对匹配完成的串转写| str.lower(m.mstr)|
 |条件(condition)|判断转写条件是否满足||
+
 由于tn本身所带的匹配和转写功能一般足够使用，所以脚本在匹配和转写中只是作为补充，而条件是最需要嵌入脚本的。
+
 由于脚本表达式用双引号表示，为了避免语法解析出现错误，因此在Python代码中需要用单引号来表示字符串。
 
 **例1**
 `rule= $(rule0) $(rule1) $(rule2) : $(rewrite1) $(rewrite2) "m.str+'haha'"`
+
 rewrite1负责转写rule0，rewrite2转写rule1, 后面的脚本表达式转写rule2：
+
 m代表rule2所匹配的结果。这个结果称为MatchResult(可参考tnpy源代码)，它有如下属性：
 ```
 ot       #原始输入字符串
@@ -24,28 +28,46 @@ m.mstr   #匹配串
 m.rstr   #转写串
 m.pos    #匹配得到的位置
 ```
+
 **例2**
+
 `rule= $(rule0) $(rule1) $(rule2) : "m[0].mstr+m[1].mstr+m[2].mstr";`
+
 以上脚本，将三个规则的匹配字符串加起来返回。
 
 转写部分只有一个规则时，该规则需要转写匹配部分里的全部内容，形参为m[0],m[1]...，就像这个例子描述的样子。
+
 但如果转写部分有多个规则，则转写部分的规则数量必须和匹配部分的规则数量一致，一一对应：
+
 `rule= $(rule0) $(rule1) $(rule2) : "m.mstr" "m.mstr" "m.mstr";`
+
 此时，三个脚本表达式分别承载前面的三个顺序规则。由于对应的只有一个规则，所以m等价于m[0]。
 
 **例3**
+
 `low_to_up_letter =   $(low_letter) : "unicode.upper(m.mstr)";`
+
 `$(low_letter)`匹配了小写字母，后面的表达式将前面表达式匹配后的结果转换为大写，并返回。
+
 **例4**
+
 `unit_electric = $(integer_decimal) $(unit_tabl_electric) :: "abs(e(unit_kywd_electric),m[0])<33"`
+
 这个例子稍微复杂一些，例如识别30m到底是30米还是30兆字节，就取决于文本附近有没有相应的关键字。
+
 `unit_kywd_electric`规则定义如下：
+
 `unit_kywd_electric = ("速度") | ("网速") | ("电脑") | ("导体")...;#省略一部分`
+
 上面的脚本，`$(integer_decimal)`匹配30, `$(unit_tabl_electric)`匹配m，
+
 e函数在原始字符串中匹配`unit_kywd_electric`实体，之后判断这个实体在字符串的位置和m[0]的位置的绝对值是否小于33, 用来确定这是否是信息计量单位。
+
 上面的表达式有些复杂，同时，当e函数匹配失败返回None，那么程序就会报错，因此可以修改为
 `dist('unit_kywd_electric',0)<33`
+
 dist是tnpy里内置的一个函数：
+
 ```
  def dist(name, i=0):
             header = e(name)
@@ -53,8 +75,11 @@ dist是tnpy里内置的一个函数：
 				return int_max;
             return abs(header.pos - m[i].pos)
 ```
+
 tn脚本不建议（也不能够）写入超过多行python代码，因此为了安全和方便，可以自行定制函数来方便匹配和转写，tnpy会将这些函数嵌入到引擎当中，成为闭包函数，例如：
+
 `#%Script% extends`
+
 这样就导入了extends.py库
 
 ###2. 使用纯Python编写规则
@@ -77,32 +102,44 @@ anything = RE('.*');
 得益于Python非常fancy的语法，buiid实际上是`("成立于":"建成了")`, quotekw则是两个正则的或表达式。
 
 下面定义了一个顺序表达式，是不是可读性也很强呢？
+
 `quote1 = SQE([quotekw, anything, quote0, anything, splitkw0])`
+
 python版本的规则和tn规则也能相互引用，tn规则可以直接引用py规则，而py规则想要引用，则需要
+
 `quote_example= SQE([REF('quote')],[rewriterule])`
+
 我简直深深地爱上了Python。
 
 ##3. 结合NLP和词性
+
 原始的tnpy，为了保证代码的纯粹性，没有加入这些功能，如果我们希望匹配
 
 `**名词**确实是**形容词**`
-这样的表达，难道要把所有的名词和形容词都列进去吗？这显然是不必要的。**tnnlp**模块就是解决这个问题的。
-    tnnlp已经添加入tnpy核心库中了。
+
+这样的表达，难道要把所有的名词和形容词都列进去吗？这显然是不必要的。**tnnlp**模块就是解决这个问题的。tnnlp已经添加入tnpy核心库中了。
+
 使用时也很简单：
+
 `from tnnlp import NEREntity as NE,WordEntity as WE;`
+
 于是，”地名”建成于”时间”，就能用下面的表达式来解决：
 ```
 time2 = SQE([NE('nt'), build, 'date_fix'], rewriteOrders=[2, 1, 0]);
 ```
+
 `rewriteorders=[2,1,0]`等价于tn规则里的```$3,$2,$1```.
 
 其中，`NE`代表一个实体，`nt`为地名;类似地，`n`是名词，`ad`是形容词。  NLP使用了结巴分词作为分词和词性标注的方法。
 
 ###4.使用词库
+
 如果我们想匹配“程序员”是伟大的职业这样的表达，那么就需要把程序员或是某种工种的所有表达全部列出来。这个工作量太大了。
 
 同样，描述“好”的形容词也有很多，都列出来也会浪费大量的时间。解决这个问题的办法，就是使用词库。
+
 tnnlp使用了哈工大标注的一份语料库：
+
 ```
 Aa01A07= 者 手 匠 客 主 子 家 夫 翁 汉 员 分子 鬼 货 棍 徒
 Aa01A08= 每人 各人 每位
@@ -123,16 +160,21 @@ word= WE('Ae06');
 rewrite= RE('.+','$1是一种伟大的职业');
 wordme= SQE([word],[rewrite])
 ```
+
 一旦遇到`Ae06`分支下的词，就会自动将其转换为xxx是一种伟大的职业。
+
 这也是写纯Python规则的好处，可以方便地定制类型，扩展核心引擎的功能。
 
 ###5. 乱序匹配
+
 以提取校训为例，校训一般来说有以下几种表达：
 
 语句1：`北京邮电大学的校训是“厚德博学，敬业乐群”。`
+
 语句2：`“学为人师，行为世范”是北师大启功先生提出的校训。“为学生着想”….`
 
 如果用正则提取离校训最近的双引号的内容，可能会出错，因为前后可能还有其他双引号标注的内容，如上面的“为学生着想”。
+
 因此，想抽取校训主要有三个特征：**校训关键字**，**双引号**和**标点符号**。
 ```
 quote1 = SQE([quotekw, anything, quote0, anything, splitkw0], matchorders=[5, 1, 2, 1, 4]);
@@ -141,7 +183,8 @@ quote = TE([quote1,quote2])
 ```
 (其他规则都已经在上面定义过了)
 
-quote规则描述了两种类型`quote1`和`quote2`, 对quote1来说，要匹配语句1，匹配按照优先次序`5,1,2,1,4`，先匹配quotekw,找到了`校训`两字，再找分隔符，找到了句号。此时就把整个句子夹逼到了
+quote规则描述了两种类型`quote1`和`quote2`, 对quote1来说，要匹配语句1，匹配按照优先次序`5,1,2,1,4`，先匹配quotekw,找到了`校训`两字，再找分隔符，找到了句号。此时就把整个句子夹逼到了。
+
 `校训是“厚德博学，敬业乐群”`，再匹配`quote0`,把实际的双引号中的校训提取出来。最终两个anything匹配`是`和`null`。
 
 对quote2来说，匹配语句2，quotekw匹配了`校训`,splitkw0匹配了句首,quote0匹配了`"学为人师，行为世范"`,anything匹配了夹逼后剩下的部分。

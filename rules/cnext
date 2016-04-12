@@ -37,7 +37,7 @@ low_letter = (/[a-z]/);
 
 up_letter =  (/[A-Z]/);
 ###%Order% 274
-low_to_up_letter =   $(low_letter) : "unicode.upper(rt)";
+low_to_up_letter =   $(low_letter) : "unicode.upper(m.mstr)";
 en_letter =  $(low_letter) | $(up_letter);
 
 en_letters =  $(en_letter)+;
@@ -419,8 +419,7 @@ unit_tabl_electric = $(unit_amount_eng_all) $(unit_electric_eng)
 unit_kywd_electric = ("电") | ("交流") | ("直流") | ("导体") | ("功率") | ("负载") | ("阻抗") | ("线圈") | ("磁场") | ("回路") | ("滤波") | ("欧姆") | ("瓦特") | ("伏特") | ("焦耳") | ("毫安") |  ("安培") | ("赫兹");
 #%Property% Value,Unit
 #%Order% 1 
-unit_electric = $(integer_decimal) $(unit_tabl_electric) ;
-#: : "dist('unit_kywd_electric')<33"
+unit_electric = $(integer_decimal) $(unit_tabl_electric) :: "dist('unit_kywd_electric')<33"
 
 
 
