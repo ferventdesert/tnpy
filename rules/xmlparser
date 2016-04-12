@@ -1,0 +1,46 @@
+#this TN-XML parser, let's take it 
+
+
+equal = (/\s?=\s?/);
+equal0 = (/=/);
+end= (/\s?;/);
+shortspace =(/ /);
+shortspace0 = (/\s?/);
+space= (/[\s\r\n]*/);
+values= (/[#\sA-Za-z0-9;\*,_:%/\.\+\-\(\)]+/);
+#下面这个为注释使用，不使用-
+values0 = (/[#\sA-Za-z0-9;\*,_:%/\.\+\(\)]+/);
+property= (/"/) $(values) (/"/);
+name= (/[\w|\-:]+/);
+
+noteleft= (/<!--/);
+noteright = (/-->/);
+#%Property% ,,note
+note =$(space) $(noteleft) $(values0) $(noteright) $(space);
+ 
+ 
+#%Property% ,$key,,$value
+properties =$(space) $(name)  $(equal) $(property) $(space);
+
+manyproperties0 =$(properties)*;
+
+manyproperties =$(manyproperties0) | $(space);
+leftbracket = (/</);
+endleftbracket = (/<//);
+rightbracket= (/>/);
+endrightbracket = (//>/);
+
+
+#%Property% children|text
+child = $(xmls) $(shortspace0) | $(values) $(shortspace0);
+
+#%Order% 2
+#%Property% ,,name,property,,child |,,name,property
+xml = $(space) $(leftbracket) $(name) $(manyproperties) $(rightbracket)
+$(child) $(space)  $(endleftbracket) $(name)  $(rightbracket) $(space)
+ |  $(space) $(leftbracket) $(name) $(manyproperties) $(space)  $(endrightbracket)  $(space)
+ |  $(note);
+
+xmls= $(xml)+;
+
+

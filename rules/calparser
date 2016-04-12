@@ -1,0 +1,60 @@
+#计算引擎
+#尝试解决 三点五乘以八点三的功能
+
+#%Include% Rules/cnext
+add  = (/加上?|\+|＋/ : /+/) ;
+sub  = (/减去?|\-|－/ : /-/);
+mul = (/乘以?|\*|×/ : /*/);
+div = (/除以?|/|÷/ : ///); 
+pow2 = (/的?平方/ : /**2/);
+pow3 = (/的?立方/ : /**3/);
+pown=  (/的?/ : //) $(digit) (/次方/ : /**/) : $3 $2 $1; 
+
+
+result= (/的?结果/);
+addresult0= (/的?和/);
+subresult0= (/的?差/);
+addresult = $(result) $(addresult0);
+subresult = $(result) $(subresult0);
+addsub0=  $(add) | $(sub) ; 
+logic0 =$(or) | $(and)  ;
+divpow0 = $(mul) | $(div);
+equalcheck = $(bigger) |$(less) | $(noequal);
+
+operator= $(addsub0) | $(equalcheck) | $(logic0);
+
+divpow = $(digit) $(divpow0) $(digit) ;
+powx= $(pow2) | $(pow3) | $(pown);
+pow = $(digit) $(powx);	
+
+#functions
+print = (/打印/ : /print/);
+send = (/发送/ : /send/);
+functions = $(print) | $(send);
+function = $(functions) $(noterminator) : "invoke(m[0].rstr,m[1].rstr)";
+
+
+addsub= $(not) $(noterminator)
+	| $(noterminator) $(operator) $(noterminator);
+	
+terminator   = $(digit) | $(ifelse) | $(pow) | $(divpow) | $(function);
+
+
+
+#暂时无法分析 3加5的和乘以3，因为会造成循环递归，从左向右推导不可行
+#	| $(noterminator) $(add) $(noterminator)  $(addresult)
+#	| $(noterminator) $(sub) $(noterminator)  $(subresult);
+
+#%Order% 28
+noterminator = $(terminator) : "eval(m.rstr)" |  $(addsub) : "eval(m.rstr)";
+
+
+or = (/或/ : / or /);
+and = (/且/ : / and /);
+not = (/不是/ : / not /);
+equal = (/等于|=/ : /=/);
+bigger = (/大于|>/ : />/);
+less = (/小于|</ :/</);
+noequal = (/不等于/: /!=/);
+
+ifelse =  (/如果/) $(noterminator) (/,那么/) $(noterminator) (/,否则/) $(noterminator) : "check(m[1].rstr,m[3].rstr,m[5].rstr)";

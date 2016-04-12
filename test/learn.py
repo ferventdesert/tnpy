@@ -2,6 +2,9 @@
 
 from src.tnpy import RegexCore
 core = RegexCore('../rules/learn')
+import src.tngraph as graph
+graph.buildGraph(core,'int_0_99');
+exit()
 RegexCore.LogFile = open("learn.log", 'w')
 RegexCore.LogFile.truncate()
 #matchs=core.Match('领导你好！老婆你好');
