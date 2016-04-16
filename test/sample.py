@@ -1,12 +1,15 @@
 # coding=utf-8
-from src.tnpy import RegexCore
+
+import sys
+sys.path.append("../src")
+from tnpy import RegexCore
 import json;
-import src.tngraph as graph
+#import tngraph as graph
 
 core = RegexCore('../rules/cnext')
-graph.buildGraph(core,'time_fix');
-exit()
-RegexCore.LogFile = open("info.html", 'w')
+#graph.buildGraph(core,'time_fix');
+#exit()
+#RegexCore.LogFile = open("info.html", 'w')
 #RegexCore.LogFile.truncate()
 
 print(core.Extract('十三分之二十四',entities=[core.Entities['fraction']]))

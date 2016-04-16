@@ -185,13 +185,16 @@ class EntityBase(object):
         def e(entityname):
             entity = self.Core.Entities[entityname]
             header = None
-            header = entity.MatchItem(ot, 0, header)
-            if header is None:
+            header = entity.MatchItem(ot, 0, True, header)
+            if not IsFail(header):
                 header = MatchResult(entity, None, -100)
-            return header
+                return header
+            return None
 
         def dist(name, i=0):
             header = e(name)
+            if header is None:
+                return int_max;
             return abs(header.pos - m[i].pos)
 
         result = eval(self.Script)
@@ -290,6 +293,7 @@ class RepeatEntity(EntityBase):
         if isinstance(self.Entity, str):
             self.Entity = self.Core.Entities[self.Entity];
         self.Entity.Core = self.Core;
+   
 
     def SetValues(self, values):
         super(RepeatEntity, self).SetValues(values);
@@ -990,7 +994,7 @@ class SequenceEntity(EntityBase):
                                                                                          ScriptEntity):
             finalmatchScript = True;
         treeResult = self.TreeNodeMatch(self.Tree, input, start, end, finalmatchScript, muststart);
-        if isinstance(treeResult, int):
+        if IsFail(treeResult):
             self.LogOut(None)
             return treeResult;
         matchResults = [];
@@ -1004,8 +1008,6 @@ class SequenceEntity(EntityBase):
                 matchResults[i].Order = i
         if self.Condition is not None and self.Condition.EvalScript(matchResults, input) == False:
             self.LogOut(None)
-            if sum > 0:
-                return treeResult;
             return start;
         start = matchResults[0].pos;
         sum = 0;
